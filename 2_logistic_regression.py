@@ -1,11 +1,7 @@
-import tensorflow as tf
-import numpy as np
-
+import tensorflow as tf, numpy as np
 from cifarutils import loadCifar
-from matplotlib import pyplot as plt
 
 BATCH_SIZE = 256
-
 X_train, y_train, X_valid, y_valid, X_test, y_test = loadCifar()
 
 def init_weights(shape):
