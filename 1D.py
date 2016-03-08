@@ -1,28 +1,50 @@
+# Usual imports
 import tensorflow as tf, numpy as np
-from cifarutils import loadCifar
 
+NUM_EPOCHS = 100
 
+# Create dataset
 dataX = np.linspace(-10, 10, 100)
 dataY = dataX / 7.782
 
-X = tf.placeholder("float", [100]) # create symbolic variables
-Y = tf.placeholder("float", [100])
+# Create input and output nodes
+X = tf.placeholder("float", [100], name="X")
+Y = tf.placeholder("float", [100], name="Y")
 
-var = tf.Variable(tf.random_normal((1,)))
+# Create the variable we want to optimize
+var = tf.Variable(tf.random_normal([1]), name="multiplicator")
 
+# Build the graph
 predy = tf.mul(X, var)
 
-cost = tf.reduce_mean((predy - Y)**2)
+# Get the loss (here, a simple SSE)
+loss = tf.reduce_mean((predy - Y)**2)
 
-train_op = tf.train.GradientDescentOptimizer(0.001).minimize(cost)
+# We use a built-in optimizer (Gradient descent)
+train_op = tf.train.GradientDescentOptimizer(0.001).minimize(loss)
+cost_display = tf.scalar_summary("Loss", loss)
+mult_display = tf.scalar_summary("a", var)
 
+# We compile the graph
 sess = tf.Session()
+
+
+# Only used for vizualisation purposes
+# Write graph infos to the specified file
+merged_display = tf.merge_all_summaries()
+writer = tf.train.SummaryWriter("/tmp/tflogs_1D", sess.graph_def, flush_secs=10)
+
+# We must initialize the values of our variables
 init = tf.initialize_all_variables()
 sess.run(init)
 
-
-loss, trainscore, testscore = [], [], []
-for i in range(100):
-    sess.run(train_op, feed_dict={X: dataX, Y: dataY})
-    loss.append(sess.run(cost, feed_dict={X: dataX, Y: dataY}))
-    print(sess.run(var)[0], loss[-1])
+for i in range(NUM_EPOCHS):
+    # This will train the network using our dataset
+    sess.run(train_op, feed_dict={X: dataX,
+                                  Y: dataY})
+    # Only for debug / display purposes
+    lval = sess.run(merged_display, feed_dict={X: dataX,
+                                             Y: dataY})
+    writer.add_summary(lval, i)
+    #loss.append(sess.run(cost, feed_dict={X: dataX, Y: dataY}))
+    #print(sess.run(var)[0], loss[-1])
