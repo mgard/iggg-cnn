@@ -23,7 +23,7 @@ loss = tf.reduce_mean((predy - Y)**2)
 # We use a built-in optimizer (Gradient descent)
 train_op = tf.train.GradientDescentOptimizer(0.001).minimize(loss)
 cost_display = tf.scalar_summary("Loss", loss)
-mult_display = tf.scalar_summary("a", var)
+mult_display = tf.scalar_summary("a", var.value()[0])
 
 # We compile the graph
 sess = tf.Session()
@@ -46,5 +46,3 @@ for i in range(NUM_EPOCHS):
     lval = sess.run(merged_display, feed_dict={X: dataX,
                                              Y: dataY})
     writer.add_summary(lval, i)
-    #loss.append(sess.run(cost, feed_dict={X: dataX, Y: dataY}))
-    #print(sess.run(var)[0], loss[-1])
