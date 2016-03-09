@@ -1,0 +1,121 @@
+\documentclass[12pt]{article}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{hyperref}
+\usepackage{mathtools}
+
+
+\newcommand\p[2]{\frac{\partial #1}{\partial #2}}
+
+\begin{document}
+
+\section*{1A}
+
+\begin{equation}
+40 + 2
+\end{equation}
+
+\section*{1B}
+
+\begin{equation}
+  \begin{bmatrix}
+    2 & 6 \\
+    3 & 2 \\
+  \end{bmatrix}
+  \times
+  \begin{bmatrix}
+    5 \\
+    5 \\
+  \end{bmatrix}\end{equation}
+
+\section*{1C}
+
+\begin{equation}
+\mathbf{X} \times \mathbf{Y} \;,
+\qquad \text{where} \; \mathbf{X} \in \mathbb{R}^{4 \times 4},
+\quad \mathbf{Y} \in \mathbb{R}^{4 \times 3}.
+\end{equation}
+
+\section*{1D}
+
+\begin{equation}
+\arg\min_{a}  \| a \cdot \mathbf{x} - \mathbf{b}\|^2 \;,
+\qquad \text{where} \; \mathbf{b} = \frac{1}{7.782} \mathbf{x}.
+\end{equation}
+
+\section*{2A}
+(Inspired by \url{https://www.ics.uci.edu/~pjsadows/notes.pdf})
+
+$n_\text{out}$ is the quantity of outputs of the net.
+
+Cross-entropy:
+\begin{equation}
+E = - \sum_{i=1}^{n_\text{out}} \left( t_i \log(o_i) + ( 1 - t_i ) \log(1 - o_i) \right)
+\end{equation}
+
+Logistic function:
+\begin{equation}
+o_i = \frac{1}{1+e^{-x_i}}
+\end{equation}
+
+Iterating on the inputs of this layer $j$,
+\begin{equation}
+x_i = \sum_j o_j \cdot w_{j,i}
+\end{equation}
+
+Backprop:
+\begin{equation}
+\frac{\partial E}{\partial w_{j,i}} = \frac{\partial E}{\partial o_i} \frac{\partial o_i}{\partial x_i} \frac{\partial x_i}{\partial w_{j,i}}
+\end{equation}
+Where:
+\begin{eqnarray}
+\frac{\partial E}{\partial o_i} &= \frac{o_i - t_i}{o_i \left(1 - o_i \right)} \\
+\frac{\partial o_i}{\partial x_i} &= o_i \left(1 - o_i \right) \\
+\frac{\partial x_i}{\partial w_{j,i}} &= o_j \\
+\end{eqnarray}
+
+Combining them together,
+\begin{equation}
+\frac{\partial E}{\partial x_i} = o_i - t_i
+\quad,
+\end{equation}
+and
+\begin{equation}
+\frac{\partial E}{\partial w_{j,i}} = \left( o_i - t_i \right) o_j
+\quad,
+\end{equation}
+
+
+\section*{3}
+
+
+\section*{4}
+Inspired by : \url{http://andrew.gibiansky.com/blog/machine-learning/convolutional-neural-networks/}
+
+2D Convolution, weights can be considered as a \emph{filter}. To get the output value at pixel $(p, q)$:
+\begin{equation}
+\left( w \ast o \right)(p, q) = x_{j,i}(p, q) \; \stackrel{\mathclap{\normalfont\mbox{def}}}{=} \; \sum_{a=0}^{n_x-m_x} \sum_{b=0}^{n_y-m_y} w_{j,i} \cdot o_j(p-a, q-b)
+\quad,
+\end{equation}
+where $a$ and $b$ is the sliding window (This definition uses the 'valid' mode on an image of size $\left( m_x, m_y \right)$ and a filter of size $\left( n_x, m_y \right)$).
+
+Backprop (supposing an activation function $\sigma$):
+\begin{equation}
+\p{E}{\omega_{ab}} = \sum_{i=0}^{n_x-m_x}\sum_{j=0}^{n_y-m_y} \p{E}{x_{ij}} \p{x_{ij}}{\omega_{ab}}
+= \sum_{i=0}^{N-m}\sum_{j=0}^{N-m} \p{E}{x_{ij}} o_{(i+a)(j+b)}
+\end{equation}
+
+\begin{equation}
+\p{E}{x_{ij}} = \p{E}{o_{ij}} \p{o_{ij}}{x_{ij}} = 
+ \p{E}{o_{ij}} \p{}{x_{ij}}\left(\sigma(x_{ij})\right) = 
+ \p{E}{o_{ij}} \sigma'(x_{ij})
+\end{equation}
+
+
+\section*{5}
+
+This table interesting: \url{https://en.wikipedia.org/wiki/Activation_function#Comparison_of_activation_functions}. Just steal the .svg of the ELU function there! :)
+
+Dropout : seems interesting : \url{file:///home/soravux/Downloads/DropoutCleanF.pdf}
+
+\end{document}
