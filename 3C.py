@@ -46,10 +46,10 @@ accuracy = tf.reduce_mean(tf.cast(ispredcorrect, 'float'))
 
 # Only used for vizualisation purposes
 loss_disp = tf.scalar_summary("Cross entropy", loss)
-w_disp = tf.histogram_summary("W (hidden layer #1)", w_hidden1)
-w_disp = tf.histogram_summary("W (hidden layer #2)", w_hidden2)
-w_disp = tf.histogram_summary("W (hidden layer #3)", w_hidden3)
-w_disp2 = tf.histogram_summary("W (output layer)", w_output)
+w_disp1 = tf.histogram_summary("W (hidden layer #1)", w_hidden1)
+w_disp2 = tf.histogram_summary("W (hidden layer #2)", w_hidden2)
+w_disp3 = tf.histogram_summary("W (hidden layer #3)", w_hidden3)
+w_disp4 = tf.histogram_summary("W (output layer)", w_output)
 acc_disp = tf.scalar_summary("Accuracy (train)", accuracy)
 merged_display = tf.merge_all_summaries()
 

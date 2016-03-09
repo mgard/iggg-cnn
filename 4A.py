@@ -3,7 +3,7 @@ import tensorflow as tf, numpy as np, time
 from cifarutils import loadCifar
 
 BATCH_SIZE = 256
-NUM_EPOCHS = 500
+NUM_EPOCHS = 150
 
 # Fetch dataset and reshape it
 X_train, y_train, X_valid, y_valid, X_test, y_test = loadCifar()
@@ -13,12 +13,14 @@ trX, trY, teX, teY = X_train.transpose([0, 2, 3, 1]), y_train, X_test.transpose(
 X = tf.placeholder("float", [None, 32, 32, 3])
 Y = tf.placeholder("float", [None, 10])
 
-
+# Create our weights matrix (and provide initialization info)
 w_c1 = tf.Variable(tf.truncated_normal([3, 3, 3, 32], stddev=0.2))
 w_f1 = tf.Variable(tf.truncated_normal([16*16*32, 256], stddev=0.2))
 w_f2 = tf.Variable(tf.truncated_normal([256, 64], stddev=0.2))
 w_out = tf.Variable(tf.truncated_normal([64, 10], stddev=0.2))
 
+
+# Define our model (how do we predict)
 pred = tf.nn.relu(tf.nn.conv2d(X, w_c1, strides=[1, 1, 1, 1], padding='SAME'))
 pred = tf.nn.max_pool(pred, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='SAME')
 pred = tf.reshape(pred, [-1, 16*16*32])
@@ -42,10 +44,10 @@ accuracy = tf.reduce_mean(tf.cast(ispredcorrect, 'float'))
 
 # Only used for vizualisation purposes
 loss_disp = tf.scalar_summary("Cross entropy", loss)
-w_disp = tf.histogram_summary("W (conv layer)", w_c1)
-w_disp = tf.histogram_summary("W (hidden layer #2)", w_f1)
-w_disp = tf.histogram_summary("W (hidden layer #3)", w_f2)
-w_disp2 = tf.histogram_summary("W (output layer)", w_out)
+w_disp1 = tf.histogram_summary("W (conv layer)", w_c1)
+w_disp2 = tf.histogram_summary("W (hidden layer #2)", w_f1)
+w_disp3 = tf.histogram_summary("W (hidden layer #3)", w_f2)
+w_disp4 = tf.histogram_summary("W (output layer)", w_out)
 acc_disp = tf.scalar_summary("Accuracy (train)", accuracy)
 merged_display = tf.merge_all_summaries()
 

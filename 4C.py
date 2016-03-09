@@ -3,33 +3,51 @@ import tensorflow as tf, numpy as np, time
 from cifarutils import loadCifar
 
 BATCH_SIZE = 256
-NUM_EPOCHS = 500
+NUM_EPOCHS = 250
 
 # Fetch dataset and reshape it
 X_train, y_train, X_valid, y_valid, X_test, y_test = loadCifar()
-trX, trY, teX, teY = X_train.reshape(len(X_train), -1), y_train, X_test.reshape(len(X_test), -1), y_test
+trX, trY, teX, teY = X_train.transpose([0, 2, 3, 1]), y_train, X_test.transpose([0, 2, 3, 1]), y_test
 
 # Create input and output nodes
-X = tf.placeholder("float", [None, 3072])
+X = tf.placeholder("float", [None, 32, 32, 3])
 Y = tf.placeholder("float", [None, 10])
 
 # Create our weights matrix (and provide initialization info)
-w_hidden1 = tf.Variable(tf.random_normal([3072, 768], stddev=0.01))
-w_hidden2 = tf.Variable(tf.random_normal([768, 192], stddev=0.01))
-w_output = tf.Variable(tf.random_normal([192, 10], stddev=0.01))
-b_hidden1 = tf.Variable(tf.zeros([768]))
-b_hidden2 = tf.Variable(tf.zeros([192]))
+w_c1 = tf.Variable(tf.truncated_normal([3, 3, 3, 32], stddev=0.2))
+w_c2 = tf.Variable(tf.truncated_normal([3, 3, 32, 64], stddev=0.2))
+w_c3 = tf.Variable(tf.truncated_normal([3, 3, 64, 128], stddev=0.2))
+w_f1 = tf.Variable(tf.truncated_normal([128 * 4 * 4, 512], stddev=0.2))
+b_f1 = tf.Variable(tf.zeros([512]))
+w_out = tf.Variable(tf.truncated_normal([512, 10], stddev=0.2))
+
+# We use these placeholder to parametrize the dropout ratio
+dropout_rate_conv = tf.placeholder("float")
+dropout_rate_full = tf.placeholder("float")
 
 # Define our model (how do we predict)
-pred = tf.nn.sigmoid(tf.matmul(X, w_hidden1) + b_hidden1)
-# Observe how do we reuse our variable "pred"
-pred = tf.nn.sigmoid(tf.matmul(pred, w_hidden2) + b_hidden2)
-pred = tf.matmul(pred, w_output)
+pred = tf.nn.elu(tf.nn.conv2d(X, w_c1, strides=[1, 1, 1, 1], padding='SAME'))
+pred = tf.nn.max_pool(pred, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='SAME')
+pred = tf.nn.dropout(pred, 1.-dropout_rate_conv)
+
+pred = tf.nn.elu(tf.nn.conv2d(pred, w_c2, strides=[1, 1, 1, 1], padding='SAME'))
+pred = tf.nn.max_pool(pred, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='SAME')
+pred = tf.nn.dropout(pred, 1.-dropout_rate_conv)
+
+pred = tf.nn.elu(tf.nn.conv2d(pred, w_c3, strides=[1, 1, 1, 1], padding='SAME'))
+pred = tf.nn.max_pool(pred, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='SAME')
+pred = tf.nn.dropout(pred, 1.-dropout_rate_conv)
+
+pred = tf.reshape(pred, [-1, 128 * 4 * 4])
+pred = tf.nn.elu(tf.matmul(pred, w_f1) + b_f1)
+pred = tf.nn.dropout(pred, 1.-dropout_rate_full)
+pred = tf.matmul(pred, w_out)
+
 
 # Define the loss function
 loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(pred, Y))
 # Use a gradient descent as optimization method
-train_op = tf.train.GradientDescentOptimizer(0.05).minimize(loss)
+train_op = tf.train.RMSPropOptimizer(0.001, 0.9).minimize(loss)
 
 # This will be useful to log accuracy
 # We define the prediction as the index of the highest output
@@ -42,9 +60,11 @@ accuracy = tf.reduce_mean(tf.cast(ispredcorrect, 'float'))
 
 # Only used for vizualisation purposes
 loss_disp = tf.scalar_summary("Cross entropy", loss)
-w_disp1 = tf.histogram_summary("W (hidden layer #1)", w_hidden1)
-w_disp2 = tf.histogram_summary("W (hidden layer #2)", w_hidden2)
-w_disp3 = tf.histogram_summary("W (output layer)", w_output)
+w_disp = tf.histogram_summary("W (conv layer #1)", w_c1)
+w_disp2 = tf.histogram_summary("W (conv layer #2)", w_c2)
+w_disp3 = tf.histogram_summary("W (conv layer #3)", w_c3)
+w_disp4 = tf.histogram_summary("W (hidden layer #4)", w_f1)
+w_disp5 = tf.histogram_summary("W (output layer)", w_out)
 acc_disp = tf.scalar_summary("Accuracy (train)", accuracy)
 merged_display = tf.merge_all_summaries()
 
@@ -55,15 +75,15 @@ acc_test_disp = tf.scalar_summary("Accuracy (test)", accuracy)
 # We compile the graph
 sess = tf.Session()
 # Write graph infos to the specified file
-writer = tf.train.SummaryWriter("/tmp/tflogs_3B", sess.graph_def, flush_secs=10)
+writer = tf.train.SummaryWriter("/tmp/tflogs_4C", sess.graph_def, flush_secs=10)
 
 # We must initialize the values of our variables
 init = tf.initialize_all_variables()
 sess.run(init)
 
 
-dictTrain = {X: trX, Y: trY}
-dictTest = {X: teX, Y: teY}
+dictTrain = {X: trX, Y: trY, dropout_rate_conv: 0.2, dropout_rate_full: 0.5}
+dictTest = {X: teX, Y: teY, dropout_rate_conv: 0.0, dropout_rate_full: 0.0}
 for i in range(NUM_EPOCHS):
     # This is only used to fetch some interesting information
     # and plot them in tensorboard and display them in the terminal.
@@ -85,5 +105,5 @@ for i in range(NUM_EPOCHS):
     for start, end in zip(range(0, len(trX), BATCH_SIZE),
                             range(BATCH_SIZE, len(trX), BATCH_SIZE)):
         # For each batch, we train the network and update its weights
-        sess.run(train_op, feed_dict={X: trX[start:end], Y: trY[start:end]})
+        sess.run(train_op, feed_dict={X: trX[start:end], Y: trY[start:end], dropout_rate_conv: 0.2, dropout_rate_full: 0.5})
     print("(done in {:.2f} seconds)".format(time.time()-begin))
