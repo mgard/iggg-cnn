@@ -3,7 +3,7 @@ import tensorflow as tf, numpy as np, time
 from cifarutils import loadCifar
 
 BATCH_SIZE = 256
-NUM_EPOCHS = 100
+NUM_EPOCHS = 500
 
 # Fetch dataset and reshape it
 X_train, y_train, X_valid, y_valid, X_test, y_test = loadCifar()
@@ -14,17 +14,17 @@ X = tf.placeholder("float", [None, 3072])
 Y = tf.placeholder("float", [None, 10])
 
 # Create our weights matrix (and provide initialization info)
-w = tf.Variable(tf.random_normal((3072, 10), stddev=0.01))
-
-
-
-
+w_hidden1 = tf.Variable(tf.random_normal([3072, 768], stddev=0.01))
+w_hidden2 = tf.Variable(tf.random_normal([768, 192], stddev=0.01))
+w_output = tf.Variable(tf.random_normal([192, 10], stddev=0.01))
+b_hidden1 = tf.Variable(tf.zeros([768]))
+b_hidden2 = tf.Variable(tf.zeros([192]))
 
 # Define our model (how do we predict)
-pred = tf.matmul(X, w)
-
-
-
+pred = tf.nn.sigmoid(tf.matmul(X, w_hidden1) + b_hidden1)
+# Observe how do we reuse our variable "pred"
+pred = tf.nn.sigmoid(tf.matmul(pred, w_hidden2) + b_hidden2)
+pred = tf.matmul(pred, w_output)
 
 # Define the loss function
 loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(pred, Y))
@@ -42,11 +42,11 @@ accuracy = tf.reduce_mean(tf.cast(ispredcorrect, 'float'))
 
 # Only used for vizualisation purposes
 loss_disp = tf.scalar_summary("Cross entropy", loss)
-w_disp = tf.histogram_summary("W", w)
+w_disp = tf.histogram_summary("W (hidden layer #1)", w_hidden1)
+w_disp = tf.histogram_summary("W (hidden layer #2)", w_hidden2)
+w_disp2 = tf.histogram_summary("W (output layer)", w_output)
 acc_disp = tf.scalar_summary("Accuracy (train)", accuracy)
 merged_display = tf.merge_all_summaries()
-
-
 
 # We also add a vizualisation of the performance on the test dataset
 acc_test_disp = tf.scalar_summary("Accuracy (test)", accuracy)
@@ -55,7 +55,7 @@ acc_test_disp = tf.scalar_summary("Accuracy (test)", accuracy)
 # We compile the graph
 sess = tf.Session()
 # Write graph infos to the specified file
-writer = tf.train.SummaryWriter("/tmp/tflogs_2A", sess.graph_def, flush_secs=10)
+writer = tf.train.SummaryWriter("/tmp/tflogs_3B", sess.graph_def, flush_secs=10)
 
 # We must initialize the values of our variables
 init = tf.initialize_all_variables()
@@ -87,4 +87,3 @@ for i in range(NUM_EPOCHS):
         # For each batch, we train the network and update its weights
         sess.run(train_op, feed_dict={X: trX[start:end], Y: trY[start:end]})
     print("(done in {:.2f} seconds)".format(time.time()-begin))
-
