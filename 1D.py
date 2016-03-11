@@ -12,7 +12,7 @@ X = tf.placeholder("float", [100], name="X")
 Y = tf.placeholder("float", [100], name="Y")
 
 # Create the variable we want to optimize
-var = tf.Variable(tf.random_normal([1]), name="multiplicator")
+var = tf.Variable(tf.random_normal([1]), name="A")
 
 # Build the graph
 predy = tf.mul(X, var)
@@ -23,7 +23,7 @@ loss = tf.reduce_mean((predy - Y)**2)
 # We use a built-in optimizer (Gradient descent)
 train_op = tf.train.GradientDescentOptimizer(0.001).minimize(loss)
 cost_display = tf.scalar_summary("Loss", loss)
-mult_display = tf.scalar_summary("a", var.value()[0])
+mult_display = tf.scalar_summary("A", var.value()[0])
 
 # We compile the graph
 sess = tf.Session()
